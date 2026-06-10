@@ -3,107 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ช้อปได้เงินคืน - ระบบสมาชิก & Cashback</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>ระบบ Cashback ทดสอบบนมือถือ</title>
+    <!-- โหลดไลบรารีสไตล์และตัวเชื่อมผ่าน CDN มาตรฐาน -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; font-family: sans-serif; }
+        body { background: #f3f4f6; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { background: white; padding: 25px; rounded: 15px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-w: 360px; text-align: center; }
+        h2 { color: #2563eb; margin-top: 0; margin-bottom: 8px; }
+        p { color: #6b7280; font-size: 14px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; outline: none; }
+        input:focus { border-color: #2563eb; }
+        .btn-blue { width: 100%; background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-bottom: 8px; }
+        .btn-gray { width: 100%; background: #e5e7eb; color: #374151; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .store-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; margin-top: 15px; text-align: left; }
+        .btn-orange { background: #f97316; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .hidden { display: none !important; }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800 antialiased min-h-screen flex flex-col">
+<body>
 
-    <div id="auth-page" class="flex-1 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-md w-full max-w-md">
-            <h2 class="text-2xl font-bold text-center text-blue-600 mb-2">CashbackShop</h2>
-            <p class="text-center text-gray-500 text-sm mb-6">ยินดีต้อนรับ! กรุณาเข้าสู่ระบบเพื่อสะสมเงินคืน</p>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-1">อีเมล</label>
-                    <input type="email" id="auth-email" placeholder="your@email.com" class="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-1">รหัสผ่าน (6 ตัวขึ้นไป)</label>
-                    <input type="password" id="auth-password" placeholder="••••••••" class="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500">
-                </div>
-                
-                <div class="flex gap-3 pt-2">
-                    <button onclick="handleLogin()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">เข้าสู่ระบบ</button>
-                    <button onclick="handleSignUp()" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition">สมัครสมาชิก</button>
-                </div>
+    <!-- 1. หน้าล็อกอิน / สมัครสมาชิก -->
+    <div id="auth-box" class="card">
+        <h2>CashbackShop</h2>
+        <p>กรุณาสมัครสมาชิกหรือเข้าสู่ระบบ</p>
+        <input type="email" id="email" placeholder="ใส่อีเมลของคุณ (เช่น test@test.com)">
+        <input type="password" id="password" placeholder="ใส่รหัสผ่าน 6 ตัวขึ้นไป">
+        <button onclick="signUp()" class="btn-blue">1. กดสมัครสมาชิกใหม่</button>
+        <button onclick="login()" class="btn-gray">2. กดเข้าสู่ระบบ</button>
+    </div>
+
+    <!-- 2. หน้าหลัก (จะโผล่มาเมื่อล็อกอินสำเร็จเท่านั้น) -->
+    <div id="main-box" class="card hidden">
+        <h2>ยินดีต้อนรับสมาชิก!</h2>
+        <p>ผู้ใช้งาน: <span id="user-display" style="font-weight:bold; color:#1f2937;">-</span></p>
+        <div style="background:#eff6ff; padding:15px; border-radius:10px; margin-bottom:20px;">
+            <small style="color:#6b7280;">เงินคืนสะสมของคุณ</small>
+            <div style="font-size:28px; font-weight:bold; color:#2563eb; margin-top:5px;">฿ 0.00</div>
+        </div>
+        
+        <div style="text-align:left; font-weight:bold; margin-bottom:10px;">ร้านค้าพันธมิตร</div>
+        
+        <div class="store-card">
+            <div>
+                <strong style="color:#ea580c;">Shopee</strong>
+                <div style="font-size:12px; color:#9ca3af;">รับเงินคืนสูงสุด 5%</div>
             </div>
+            <button onclick="shopNow('Shopee', 'https://shopee.co.th')" class="btn-orange">ช้อปเลย</button>
         </div>
     </div>
 
-    <div id="main-page" class="hidden flex-1 flex flex-col">
-        <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50">
-            <div class="max-w-md mx-auto flex justify-between items-center">
-                <h1 class="text-xl font-bold">CashbackShop</h1>
-                <div class="flex items-center gap-3">
-                    <div class="text-xs bg-blue-700 px-3 py-1 rounded-full">
-                        คุณ: <span id="user-email-display">...</span>
-                    </div>
-                    <button onclick="handleLogout()" class="text-xs bg-red-500 px-2 py-1 rounded hover:bg-red-600">ออกระบบ</button>
-                </div>
-            </div>
-        </header>
-
-        <main class="flex-1 p-4 max-w-md mx-auto w-full">
-            <div class="bg-white rounded-2xl p-6 shadow-sm mb-6 text-center">
-                <h2 class="text-lg font-semibold text-gray-500">เงินคืนสะสมของคุณ</h2>
-                <p class="text-4xl font-extrabold text-blue-600 mt-2">฿ <span id="wallet-balance">0.00</span></p>
-            </div>
-
-            <h3 class="text-lg font-bold mb-3 px-1">ร้านค้าพันธมิตร</h3>
-            
-            <div class="space-y-4">
-                <div class="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center border border-gray-100">
-                    <div>
-                        <h4 class="font-bold text-lg text-orange-600">Shopee</h4>
-                        <p class="text-sm text-gray-500">รับเงินคืนสูงสุด 5%</p>
-                    </div>
-                    <button onclick="recordClick('Shopee', 'https://shopee.co.th')" class="bg-orange-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-orange-600 transition">
-                        ช้อปเลย
-                    </button>
-                </div>
-            </div>
-        </main>
-    </div>
-
     <script>
-        const SUPABASE_URL = "https://pqnplszpsepdnznrurex.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbnBsc3pwc2VwZG56bnJ1cmV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNjY3MjYsImV4cCI6MjA5NjY0MjcyNn0.Z0eXpBKor6uD3PogDX6xXuYJRYh0o997EeHYhEU4ATA";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let currentUser = null;
-
-        // ตรวจสอบว่าผู้ใช้เคยล็อกอินค้างไว้ไหมตอนเปิดเว็บ
-        window.onload = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                showMainPage(session.user);
-            }
-        };
+        // กำหนดค่าการเชื่อมต่อของระบบคุณ
+        const URL = "https://pqnplszpsepdnznrurex.supabase.co";
+        const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbnBsc3pwc2VwZG56bnJ1cmV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNjY3MjYsImV4cCI6MjA5NjY0MjcyNn0.Z0eXpBKor6uD3PogDX6xXuYJRYh0o997EeHYhEU4ATA";
+        const client = supabase.createClient(URL, KEY);
+        
+        let myUser = null;
 
         // ฟังก์ชันสมัครสมาชิก
-        async function handleSignUp() {
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
+        async function signUp() {
+            const em = document.getElementById('email').value;
+            const pw = document.getElementById('password').value;
+            if(!em || !pw) return alert('กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน');
             
-            if (!email || !password) return alert('กรุณากรอกอีเมลและรหัสผ่าน');
-
-            const { data, error } = await supabase.auth.signUp({ email, password });
+            alert('กำลังส่งข้อมูลสมัครสมาชิก...');
+            const { data, error } = await client.auth.signUp({ email: em, password: pw });
             
-            if (error) {
-                alert('สมัครสมาชิกไม่สำเร็จ: ' + error.message);
+            if(error) {
+                alert('เกิดข้อผิดพลาด: ' + error.message);
             } else {
-                alert('สมัครสมาชิกสำเร็จ! กรุณาเช็กอีเมลของคุณเพื่อกดยืนยันตัวตน (Confirm Email) จากนั้นค่อยมากดเข้าสู่ระบบครับ');
+                alert('สมัครสมาชิกสำเร็จเรียบร้อย! บัญชีของคุณพร้อมใช้งานแล้ว ต่อไปให้กดปุ่มสีเทาเพื่อเข้าสู่ระบบได้เลยครับ');
             }
         }
 
         // ฟังก์ชันเข้าสู่ระบบ
-        async function handleLogin() {
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
+        async function login() {
+            const em = document.getElementById('email').value;
+            const pw = document.getElementById('password').value;
+            if(!em || !pw) return alert('กรุณากรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ');
 
-            if (!email || !password) return alert('กรุณากรอกอีเมลและรหัสผ่าน');
+            alert('กำลังตรวจสอบข้อมูลเข้าสู่ระบบ...');
+            const { data, error } = await client.auth.signInWithPassword({ email: em, password: pw });
+            
+            if(error) {
+                alert('เข้าสู่ระบบไม่สำเร็จ: ' + error.message);
+            } else {
+                myUser = data.user;
+                alert('เข้าสู่ระบบสำเร็จแล้ว!');
+                document.getElementById('auth-box').classList.add('hidden');
+                document.getElementById('main-box').classList.remove('hidden');
+                document.getElementById('user-display').innerText = myUser.email;
+            }
+        }
+
+        // ฟังก์ชันเมื่อกดไปช้อปปิ้งเพื่อเก็บประวัติลงฐานข้อมูล
+        async function shopNow(storeName, targetLink) {
+            if(!myUser) return alert('กรุณาเข้าสู่ระบบก่อนช้อปปิ้ง');
+            alert('กำลังบันทึกประวัติการคลิกช้อปปิ้งลงในตาราง click_logs...');
+            
+            const { error } = await client.from('click_logs').insert([
+                { user_id: myUser.id, store_name: storeName, affiliate_url: targetLink }
+            ]);
+            
+            if(error) {
+                alert('บันทึกลงฐานข้อมูลผิดพลาดเนื่องจาก: ' + error.message);
+            } else {
+                alert('บันทึกข้อมูลเข้า Supabase สำเร็จเรียบร้อย! ระบบจะเปิดหน้าร้านค้าให้คุณทันที');
+                window.location.href = targetLink;
+            }
+        }
+    </script>
+</body>
+</html>
+    <style>
+        * { box-sizing: border-box; font-family: sans-serif; }
+        body { background: #f3f4f6; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { background: white; padding: 25px; rounded: 15px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-w: 360px; text-align: center; }
+        h2 { color: #2563eb; margin-top: 0; margin-bottom: 8px; }
+        p { color: #6b7280; font-size: 14px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; outline: none; }
+        input:focus { border-color: #2563eb; }
+        .btn-blue { width: 100%; background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-bottom: 8px; }
+        .btn-gray { width: 100%; background: #e5e7eb; color: #374151; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .store-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; margin-top: 15px; text-align: left; }
+        .btn-orange { background: #f97316; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. หน้าล็อกอิน / สมัครสมาชิก -->
+    <div id="auth-box" class="card">
+        <h2>CashbackShop</h2>
+        <p>กรุณาสมัครสมาชิกหรือเข้าสู่ระบบ</p>
+        <input type="email" id="email" placeholder="ใส่อีเมลของคุณ (เช่น test@test.com)">
+        <input type="password" id="password" placeholder="ใส่รหัสผ่าน 6 ตัวขึ้นไป">
+        <button onclick="signUp()" class="btn-blue">1. กดสมัครสมาชิกใหม่</button>
+        <button onclick="login()" class="btn-gray">2. กดเข้าสู่ระบบ</button>
+    </div>
+
+    <!-- 2. หน้าหลัก (จะโผล่มาเมื่อล็อกอินสำเร็จเท่านั้น) -->
+    <div id="main-box" class="card hidden">
+        <h2>ยินดีต้อนรับสมาชิก!</h2>
+        <p>ผู้ใช้งาน: <span id="user-display" style="font-weight:bold; color:#1f2937;">-</span></p>
+        <div style="background:#eff6ff; padding:15px; border-radius:10px; margin-bottom:20px;">
+            <small style="color:#6b7280;">เงินคืนสะสมของคุณ</small>
+            <div style="font-size:28px; font-weight:bold; color:#2563eb; margin-top:5px;">฿ 0.00</div>
+        </div>
+        
+        <div style="text-align:left; font-weight:bold; margin-bottom:10px;">ร้านค้าพันธมิตร</div>
+        
+        <div class="store-card">
+            <div>
+                <strong style="color:#ea580c;">Shopee</strong>
+                <div style="font-size:12px; color:#9ca3af;">รับเงินคืนสูงสุด 5%</div>
+            </div>
+            <button onclick="shopNow('Shopee', 'https://shopee.co.th')" class="btn-orange">ช้อปเลย</button>
+        </div>
+    </div>
+
+    <script>
+        // กำหนดค่าการเชื่อมต่อของระบบคุณ
+        const URL = "https://pqnplszpsepdnznrurex.supabase.co";
+        const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbnBsc3pwc2VwZG56bnJ1cmV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNjY3MjYsImV4cCI6MjA5NjY0MjcyNn0.Z0eXpBKor6uD3PogDX6xXuYJRYh0o997EeHYhEU4ATA";
+        const client = supabase.createClient(URL, KEY);
+        
+        let myUser = null;
+
+        // ฟังก์ชันสมัครสมาชิก
+        async function signUp() {
+            const em = document.getElementById('email').value;
+            const pw = document.getElementById('password').value;
+            if(!em || !pw) return alert('กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน');
+            
+            alert('กำลังส่งข้อมูลสมัครสมาชิก...');
+            const { data, error } = await client.auth.signUp({ email: em, password: pw });
+            
+            if(error) {
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            } else {
+                alert('สมัครสมาชิกสำเร็จเรียบร้อย! บัญชีของคุณพร้อมใช้งานแล้ว ต่อไปให้กดปุ่มสีเทาเพื่อเข้าสู่ระบบได้เลยครับ');
+            }
+        }
+
+        // ฟังก์ชันเข้าสู่ระบบ
+        async function login() {
+            const em = document.getElementById('email').value;
+            const pw = document.getElementById('password').value;
+            if(!em || !pw) return alert('กรุณากรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ');
+
+            alert('กำลังตรวจสอบข้อมูลเข้าสู่ระบบ...');
+            const { data, error } = await client.auth.signInWithPassword({ email: em, password: pw });
+            
+            if(error) {
+                alert('เข้าสู่ระบบไม่สำเร็จ: ' + error.message);
+            } else {
+                myUser = data.user;
+                alert('เข้าสู่ระบบสำเร็จแล้ว!');
+                document.getElementById('auth-box').classList.add('hidden');
+                document.getElementById('main-box').classList.remove('hidden');
+                document.getElementById('user-display').innerText = myUser.email;
+            }
+        }
+
+        // ฟังก์ชันเมื่อกดไปช้อปปิ้งเพื่อเก็บประวัติลงฐานข้อมูล
+        async function shopNow(storeName, targetLink) {
+            if(!myUser) return alert('กรุณาเข้าสู่ระบบก่อนช้อปปิ้ง');
+            alert('กำลังบันทึกประวัติการคลิกช้อปปิ้งลงในตาราง click_logs...');
+            
+            const { error } = await client.from('click_logs').insert([
+                { user_id: myUser.id, store_name: storeName, affiliate_url: targetLink }
+            ]);
+            
+            if(error) {
+                alert('บันทึกลงฐานข้อมูลผิดพลาดเนื่องจาก: ' + error.message);
+            } else {
+                alert('บันทึกข้อมูลเข้า Supabase สำเร็จเรียบร้อย! ระบบจะเปิดหน้าร้านค้าให้คุณทันที');
+                window.location.href = targetLink;
+            }
+        }
+    </script>
+</body>
+</html>
 
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             
